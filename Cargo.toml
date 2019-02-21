@@ -1,0 +1,8 @@
+[package]
+name = "dynamo-debacle"
+version = "0.1.0"
+authors = ["softprops <d.tangren@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+hyper = "0.12"
