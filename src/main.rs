@@ -34,9 +34,6 @@ fn main() {
     let server = Server::bind(&in_addr)
         .serve(move || {
             let request_client = client.clone();
-            // This is the `Service` that will handle the connection.
-            // `service_fn_ok` is a helper to convert a function that
-            // returns a Response into a `Service`.
             service_fn(move |mut req| {
                 if let Some(operation) = operation(req.headers()) {
                     if rand::random::<f64>() > 0.5 {
