@@ -2,9 +2,15 @@ use futures::future::{self, Either};
 use hyper::{
     rt::{self, Future},
     service::service_fn,
-    Body, Client, Response, Server,
+    Body, Client, HeaderMap, Response, Server,
 };
 use std::net::SocketAddr;
+
+fn operation(headers: &HeaderMap) -> Option<&str> {
+    headers
+        .get("x-amz-target")
+        .and_then(|target| target.to_str().ok().and_then(|s| s.splitn(2, '.').last()))
+}
 
 // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html
 fn fail() -> Response<Body> {
@@ -32,14 +38,10 @@ fn main() {
             // `service_fn_ok` is a helper to convert a function that
             // returns a Response into a `Service`.
             service_fn(move |mut req| {
-                if let Some(target) = req.headers().get("x-amz-target") {
-                    if let Some(operation) =
-                        target.to_str().ok().and_then(|s| s.splitn(2, '.').last())
-                    {
-                        if rand::random::<f64>() > 0.5 {
-                            println!("failing {} operation", operation);
-                            return Either::A(future::ok(fail()));
-                        }
+                if let Some(operation) = operation(req.headers()) {
+                    if rand::random::<f64>() > 0.5 {
+                        println!("failing {} operation", operation);
+                        return Either::A(future::ok(fail()));
                     }
                 }
                 let uri_string = match req.uri().path_and_query().map(|x| x.as_str()) {
