@@ -13,7 +13,7 @@ fn operation(headers: &HeaderMap) -> Option<&str> {
 }
 
 // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html
-fn fail() -> Response<Body> {
+fn throughput_exceeded_exceeded() -> Response<Body> {
     Response::builder()
         .status(400)
         .header(
@@ -24,6 +24,11 @@ fn fail() -> Response<Body> {
     "message":"You exceeded your maximum allowed provisioned throughput for a table or for one or more global secondary indexes. To view performance metrics for provisioned throughput vs. consumed throughput, open the Amazon CloudWatch console."}"#.into()
         )
         .unwrap()
+}
+
+fn fail(_operation: &str) -> Response<Body> {
+    // todo only return a possible error
+    throughput_exceeded_exceeded()
 }
 
 fn main() {
@@ -38,7 +43,7 @@ fn main() {
                 if let Some(operation) = operation(req.headers()) {
                     if rand::random::<f64>() > 0.5 {
                         println!("failing {} operation", operation);
-                        return Either::A(future::ok(fail()));
+                        return Either::A(future::ok(fail(operation)));
                     }
                 }
                 let uri_string = match req.uri().path_and_query().map(|x| x.as_str()) {
